@@ -1,6 +1,7 @@
 package com.vivance.auth.entity;
 
 import jakarta.persistence.*;
+import jakarta.persistence.Convert;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -9,15 +10,16 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "users")
+@Table(name = "user")
 @Getter @Setter @NoArgsConstructor
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")
     private Long id;
 
-    @Column(name = "user_id", nullable = false, unique = true, length = 36)
+    @Column(name = "uuid", nullable = false, unique = true, length = 36)
     private String userId;
 
     @Column(unique = true)
@@ -29,20 +31,20 @@ public class User {
     @Column(name = "last_name", length = 100)
     private String lastName;
 
-    @Column(name = "password_hash")
+    @Column(name = "password")
     private String passwordHash;
 
-    @Column(name = "country_code", length = 10)
-    private String countryCode;
+    @Column(name = "country_code")
+    private Integer countryCode;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = StatusConverter.class)
     @Column(nullable = false)
     private Status status = Status.ACTIVE;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_on", updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "modified_on")
     private LocalDateTime updatedAt;
 
     @PrePersist

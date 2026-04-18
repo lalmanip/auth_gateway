@@ -11,5 +11,5 @@ public class RegisterRequest {
     @NotBlank @Size(min = 8) private String password;
     @NotBlank          private String firstName;
     @NotBlank          private String lastName;
-                       private String countryCode;
+                       private Integer countryCode;
 }
