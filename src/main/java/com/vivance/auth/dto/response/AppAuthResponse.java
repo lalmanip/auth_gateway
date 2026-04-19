@@ -8,12 +8,10 @@ import lombok.Getter;
 @Getter
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class AuthResponse {
+public class AppAuthResponse {
     @JsonProperty("Token")
     private String accessToken;
     private String refreshToken;
     private long expiresIn;
-    private String userId;
-    private Boolean isNewUser;
-    private String sessionToken;
+    private Boolean isNewApp;
 }

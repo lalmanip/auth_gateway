@@ -1,5 +1,6 @@
 package com.vivance.auth.service;
 
+import com.vivance.auth.client.VivanceApiClient;
 import com.vivance.auth.dto.request.*;
 import com.vivance.auth.dto.response.AuthResponse;
 import com.vivance.auth.entity.RefreshToken;
@@ -25,6 +26,7 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
     private final SocialAuthService socialAuthService;
     private final PasswordEncoder passwordEncoder;
+    private final VivanceApiClient vivanceApiClient;
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
@@ -134,6 +136,7 @@ public class AuthService {
     private AuthResponse buildTokenResponse(String userId, boolean isNew) {
         String accessToken = jwtService.generateAccessToken(userId);
         String rawRefreshToken = refreshTokenService.createRefreshToken(userId);
+        String sessionToken = vivanceApiClient.fetchSessionToken();
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
@@ -141,6 +144,7 @@ public class AuthService {
                 .expiresIn(jwtService.getExpiresInSeconds())
                 .userId(userId)
                 .isNewUser(isNew)
+                .sessionToken(sessionToken)
                 .build();
     }
 }
