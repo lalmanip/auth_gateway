@@ -7,6 +7,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class VivanceAuthApplication {
     public static void main(String[] args) {
         SpringApplication.run(VivanceAuthApplication.class, args);
-         System.out.println("====== Auth Service Started  =======");
+         System.out.println("====== Auth Gateway Started  =======");
     }
 }

@@ -16,3 +16,4 @@ target/
 .DS_Store
 Thumbs.db
 target/classes/com/vivance/auth/VivanceAuthApplication.class
+target/classes/com/vivance/auth/VivanceAuthApplication.class
