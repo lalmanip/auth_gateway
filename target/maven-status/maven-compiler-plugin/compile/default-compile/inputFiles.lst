@@ -13,6 +13,8 @@ C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\dto\reques
 C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\dto\request\RegisterRequest.java
 C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\dto\response\AppAuthResponse.java
 C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\dto\response\AuthResponse.java
+C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\entity\ApiAccessLog.java
+C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\entity\ApiCallEventLog.java
 C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\entity\ConsumerAccount.java
 C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\entity\ConsumerDomain.java
 C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\entity\RefreshToken.java
@@ -21,11 +23,16 @@ C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\entity\Use
 C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\entity\UserAuthProvider.java
 C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\exception\AuthException.java
 C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\exception\GlobalExceptionHandler.java
+C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\filter\ApiAccessLogFilter.java
+C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\logging\AppAuthLoggingAspect.java
+C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\repository\ApiAccessLogRepository.java
+C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\repository\ApiCallEventLogRepository.java
 C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\repository\ConsumerAccountRepository.java
 C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\repository\ConsumerDomainRepository.java
 C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\repository\RefreshTokenRepository.java
 C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\repository\UserAuthProviderRepository.java
 C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\repository\UserRepository.java
+C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\service\ApiEventLogService.java
 C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\service\AppAuthService.java
 C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\service\AuthService.java
 C:\Lalmani\Vivance\GitHub\auth_gateway\src\main\java\com\vivance\auth\service\JwtService.java
