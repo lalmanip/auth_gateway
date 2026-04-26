@@ -29,6 +29,8 @@ public class AppAuthLoggingAspect {
     private static final String SERVICE_CHANNEL = "AUTH-APP";
     private static final Set<String> MASKED_HEADERS = Set.of("authorization", "cookie", "x-api-key");
     private static final Set<String> MASKED_BODY_FIELDS = Set.of("password", "domainPassword");
+    private static final String TRACE_ID_ATTR = "APP_AUTH_TRACE_ID";
+    private static final String TRACE_ID_HEADER = "X-Request-Id";
 
     private final ApiEventLogService apiEventLogService;
     private final ObjectMapper objectMapper;
@@ -38,21 +40,41 @@ public class AppAuthLoggingAspect {
         HttpServletRequest request = resolveRequest();
         String eventName = request != null ? request.getRequestURI() : pjp.getSignature().getName();
         Long accessLogId = resolveAccessLogId(request);
+        String traceId = resolveOrCreateTraceId(request);
+
+        String reqHeaders = serializeHeaders(request);
+        String reqParams = serializeParams(request);
+        String reqBody = serializeRequestBody(pjp.getArgs());
+
+        log.info("APP_AUTH_CALL REQUEST traceId={} accessLogId={} method={} uri={} headers={} params={} body={}",
+                traceId,
+                accessLogId,
+                request != null ? request.getMethod() : null,
+                eventName,
+                reqHeaders,
+                reqParams,
+                reqBody);
 
         apiEventLogService.save(ApiCallEventLog.builder()
                 .apiAccessLogId(accessLogId)
                 .serviceChannel(SERVICE_CHANNEL)
                 .eventName(eventName)
                 .eventType("REQUEST")
-                .headers(serializeHeaders(request))
-                .parameters(serializeParams(request))
-                .content(serializeRequestBody(pjp.getArgs()))
+                .headers(reqHeaders)
+                .parameters(reqParams)
+                .content(reqBody)
                 .build());
 
         Object result;
         try {
             result = pjp.proceed();
         } catch (Throwable ex) {
+            log.info("APP_AUTH_CALL ERROR traceId={} accessLogId={} method={} uri={} error={}",
+                    traceId,
+                    accessLogId,
+                    request != null ? request.getMethod() : null,
+                    eventName,
+                    ex.getMessage());
             apiEventLogService.save(ApiCallEventLog.builder()
                     .apiAccessLogId(accessLogId)
                     .serviceChannel(SERVICE_CHANNEL)
@@ -64,12 +86,22 @@ public class AppAuthLoggingAspect {
             throw ex;
         }
 
+        String respBody = serializeResponseBody(result);
+        Integer status = resolveStatus(result);
+        log.info("APP_AUTH_CALL RESPONSE traceId={} accessLogId={} method={} uri={} status={} body={}",
+                traceId,
+                accessLogId,
+                request != null ? request.getMethod() : null,
+                eventName,
+                status,
+                respBody);
+
         apiEventLogService.save(ApiCallEventLog.builder()
                 .apiAccessLogId(accessLogId)
                 .serviceChannel(SERVICE_CHANNEL)
                 .eventName(eventName)
                 .eventType("RESPONSE")
-                .content(serializeResponseBody(result))
+                .content(respBody)
                 .build());
 
         return result;
@@ -170,6 +202,28 @@ public class AppAuthLoggingAspect {
             log.warn("Could not serialize response body: {}", e.getMessage());
             return null;
         }
+    }
+
+    private Integer resolveStatus(Object result) {
+        try {
+            if (result instanceof ResponseEntity<?> re) {
+                return re.getStatusCode().value();
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
+
+    private String resolveOrCreateTraceId(HttpServletRequest request) {
+        if (request == null) return UUID.randomUUID().toString();
+
+        Object existing = request.getAttribute(TRACE_ID_ATTR);
+        if (existing instanceof String s && !s.isBlank()) return s;
+
+        String fromHeader = request.getHeader(TRACE_ID_HEADER);
+        String traceId = (fromHeader != null && !fromHeader.isBlank()) ? fromHeader.trim() : UUID.randomUUID().toString();
+        request.setAttribute(TRACE_ID_ATTR, traceId);
+        return traceId;
     }
 
     private String stackTraceOf(Throwable ex) {
