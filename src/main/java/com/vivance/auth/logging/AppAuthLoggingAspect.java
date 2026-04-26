@@ -112,16 +112,37 @@ public class AppAuthLoggingAspect {
     private String serializeParams(HttpServletRequest request) {
         if (request == null) return null;
         try {
-            Map<String, String> params = new LinkedHashMap<>();
+            Map<String, Object> params = new LinkedHashMap<>();
+
+            // Caller identity
+            params.put("ip", resolveClientIp(request));
+            params.put("method", request.getMethod());
+            params.put("userAgent", request.getHeader("user-agent"));
+
+            // Query parameters (masked)
             request.getParameterMap().forEach((k, v) -> {
                 if (!k.equalsIgnoreCase("password")) {
                     params.put(k, v.length > 0 ? v[0] : "");
                 }
             });
-            return params.isEmpty() ? null : objectMapper.writeValueAsString(params);
+
+            return objectMapper.writeValueAsString(params);
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private String resolveClientIp(HttpServletRequest request) {
+        // Respect reverse-proxy forwarding headers before falling back to socket address
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+        return request.getRemoteAddr();
     }
 
     private String serializeRequestBody(Object[] args) {
