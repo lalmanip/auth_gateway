@@ -17,3 +17,5 @@ target/
 Thumbs.db
 target/classes/com/vivance/auth/VivanceAuthApplication.class
 target/classes/com/vivance/auth/VivanceAuthApplication.class
+/target/classes
+src/main/resources/application.properties

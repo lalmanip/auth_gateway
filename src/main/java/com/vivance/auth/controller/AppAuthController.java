@@ -54,6 +54,35 @@ public class AppAuthController {
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
 
+    /**
+     * Same validation as {@link JwtService#isValid(String)} on the app access JWT returned as {@code Token}
+     * from {@code /app/auth/login} and {@code /app/auth/refresh}. Downstream services (e.g. hotel) must verify
+     * with the same {@code auth.jwt.secret} / HS256 key as this gateway.
+     */
+    @GetMapping("/token-info")
+    @Operation(summary = "Validate app JWT (Bearer) — diagnostic; same rules as gateway-issued Token")
+    public ResponseEntity<Map<String, Object>> tokenInfo(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        String token = safeExtractBearer(authHeader);
+        if (token == null || token.isBlank()) {
+            return ResponseEntity.status(401)
+                    .body(Map.of("valid", false, "message", "Missing or malformed Authorization"));
+        }
+        if (!jwtService.isValid(token)) {
+            return ResponseEntity.status(401)
+                    .body(Map.of("valid", false, "message", "Invalid or expired token"));
+        }
+        return ResponseEntity.ok(
+                Map.of("valid", true, "domainId", jwtService.extractUserId(token)));
+    }
+
+    private static String safeExtractBearer(String header) {
+        if (header == null || !header.startsWith("Bearer ")) {
+            return null;
+        }
+        return header.substring(7).trim();
+    }
+
     private String extractBearerToken(String header) {
         if (header == null || !header.startsWith("Bearer "))
             throw AuthException.unauthorized("Missing or malformed Authorization header");
