@@ -1,55 +1,50 @@
-spring:
-  application:
-    name: vivance-auth-service
-
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://77.37.45.41:3306/vivance_java?useSSL=false&serverTimezone=UTC
-    username: java_user
-    password: Sadguru#1924
-
-  jpa:
-    database: mysql
-    hibernate:
-      ddl-auto: none
-    show-sql: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
-
-server:
-  port: 8084
-  servlet:
-    context-path: /vivapi-auth
-
-auth:
-  jwt:
-    secret: VivanceAuthServiceSecretKey2024VivanceAuthServiceSecretKey2024VivanceAuth
-    access-token-expiry-ms: 3600000
-    refresh-token-expiry-days: 30
-
-  google:
-    client-ids: 686128296668-kj7ptbgutavu99kefvk1fgiq8pti9j6b.apps.googleusercontent.com
-
-  apple:
-    client-id: com.vivance.app
-    keys-url: https://appleid.apple.com/auth/keys
-    issuer: https://appleid.apple.com
-
-vivance:
-  api:
-    base-url: https://next.vivancetravels.com
-    domain-key: TMX5193291565602439
-    username: test229267
-    password: "test@229"
-    system: test
-
-springdoc:
-  api-docs:
-    path: /api-docs
-  swagger-ui:
-    path: /swagger-ui.html
-
-logging:
-  level:
-    com.vivance.auth: DEBUG
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vivance-auth-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vivance-auth-api
+  template:
+    metadata:
+      labels:
+        app: vivance-auth-api
+    spec:
+      containers:
+      - name: vivance-auth-api
+        image: vivance/auth-gateway:develop
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8084
+        env:
+          - name: SPRING_CONFIG_LOCATION
+            value: "file:/config/auth-api.yaml"
+          - name: JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: java-mysql-secret
+                key: JWT_SECRET
+        volumeMounts:
+          - name: config-volume
+            mountPath: /config/auth-api.yaml
+            subPath: auth-api.yaml
+            readOnly: true
+      volumes:
+        - name: config-volume
+          configMap:
+            name: auth-api-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vivance-auth-api-service
+spec:
+  type: NodePort
+  selector:
+    app: vivance-auth-api
+  ports:
+    - port: 8084
+      targetPort: 8084
+      nodePort: 30084
