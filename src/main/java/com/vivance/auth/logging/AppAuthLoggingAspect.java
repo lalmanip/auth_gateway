@@ -55,6 +55,12 @@ public class AppAuthLoggingAspect {
                 reqParams,
                 reqBody);
 
+        if (isAppLogin(request)) {
+            System.out.println("[APP_AUTH_LOGIN] REQUEST traceId=" + traceId + " accessLogId=" + accessLogId
+                    + " method=" + (request != null ? request.getMethod() : null) + " uri=" + eventName
+                    + " headers=" + reqHeaders + " params=" + reqParams + " body=" + reqBody);
+        }
+
         apiEventLogService.save(ApiCallEventLog.builder()
                 .apiAccessLogId(accessLogId)
                 .serviceChannel(SERVICE_CHANNEL)
@@ -75,6 +81,10 @@ public class AppAuthLoggingAspect {
                     request != null ? request.getMethod() : null,
                     eventName,
                     ex.getMessage());
+            if (isAppLogin(request)) {
+                System.out.println("[APP_AUTH_LOGIN] ERROR traceId=" + traceId + " accessLogId=" + accessLogId
+                        + " uri=" + eventName + " body=" + reqBody + " error=" + ex.getMessage());
+            }
             apiEventLogService.save(ApiCallEventLog.builder()
                     .apiAccessLogId(accessLogId)
                     .serviceChannel(SERVICE_CHANNEL)
@@ -96,6 +106,11 @@ public class AppAuthLoggingAspect {
                 status,
                 respBody);
 
+        if (isAppLogin(request)) {
+            System.out.println("[APP_AUTH_LOGIN] RESPONSE traceId=" + traceId + " accessLogId=" + accessLogId
+                    + " status=" + status + " body=" + respBody);
+        }
+
         apiEventLogService.save(ApiCallEventLog.builder()
                 .apiAccessLogId(accessLogId)
                 .serviceChannel(SERVICE_CHANNEL)
@@ -105,6 +120,15 @@ public class AppAuthLoggingAspect {
                 .build());
 
         return result;
+    }
+
+    /** Stdout troubleshooting lines for POST /app/auth/login only (password masked in body). */
+    private static boolean isAppLogin(HttpServletRequest request) {
+        if (request == null) {
+            return false;
+        }
+        String uri = request.getRequestURI();
+        return uri != null && uri.contains("/app/auth/login");
     }
 
     private HttpServletRequest resolveRequest() {
