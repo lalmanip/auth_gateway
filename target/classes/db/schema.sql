@@ -45,3 +45,35 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE INDEX idx_rt_user_id ON refresh_tokens (user_id);
+
+-- API access log parent record (one row per inbound request; mirrors vivance_api.api_access_log)
+CREATE TABLE IF NOT EXISTS api_access_log (
+    id                BIGINT AUTO_INCREMENT PRIMARY KEY,
+    module            VARCHAR(100),
+    user_session_id   VARCHAR(255),
+    consumer_app_key  VARCHAR(255),
+    consumer_domain_key VARCHAR(255),
+    url_or_action     VARCHAR(500),
+    result_token      VARCHAR(500),
+    app_payment_refid VARCHAR(255),
+    ip_address        VARCHAR(50),
+    created_datetime  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- API call audit log (mirrors vivance_api.api_call_event_log)
+CREATE TABLE IF NOT EXISTS api_call_event_log (
+    id                BIGINT AUTO_INCREMENT PRIMARY KEY,
+    api_access_log_id BIGINT NULL,
+    service_channel   VARCHAR(100),
+    event_name        VARCHAR(500),
+    event_type        VARCHAR(50),
+    headers           TEXT,
+    parameters        TEXT,
+    result_token      VARCHAR(500),
+    app_payment_refid VARCHAR(255),
+    content           TEXT,
+    created_datetime  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE INDEX idx_acel_event_type ON api_call_event_log (event_type);
+CREATE INDEX idx_acel_event_name ON api_call_event_log (event_name(255));
