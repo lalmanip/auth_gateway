@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="warn" monitorInterval="30">
+
+    <Properties>
+        <Property name="APP_LOG_ROOT">${sys:log.file.path:-./logs}</Property>
+        <Property name="LOG_PATTERN">[%-5level] %d{yyyy-MM-dd HH:mm:ss} [%t] %c{1} - %msg%n</Property>
+    </Properties>
+
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${LOG_PATTERN}" />
+        </Console>
+
+        <RollingFile name="AppLog"
+                     fileName="${APP_LOG_ROOT}/auth-gateway.log"
+                     filePattern="${APP_LOG_ROOT}/auth-gateway-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="${LOG_PATTERN}" />
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="10MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="30" fileIndex="min"/>
+        </RollingFile>
+    </Appenders>
+
+    <Loggers>
+        <SpringProfile name="!prod">
+            <Logger name="com.vivance.auth" level="debug" additivity="false">
+                <AppenderRef ref="Console"/>
+                <AppenderRef ref="AppLog"/>
+            </Logger>
+            <Root level="info">
+                <AppenderRef ref="Console"/>
+                <AppenderRef ref="AppLog"/>
+            </Root>
+        </SpringProfile>
+
+        <SpringProfile name="prod">
+            <Logger name="com.vivance.auth" level="info" additivity="false">
+                <AppenderRef ref="AppLog"/>
+            </Logger>
+            <Root level="warn">
+                <AppenderRef ref="AppLog"/>
+            </Root>
+        </SpringProfile>
+    </Loggers>
+</Configuration>
