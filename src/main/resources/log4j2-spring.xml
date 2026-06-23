@@ -37,9 +37,11 @@
 
         <SpringProfile name="prod">
             <Logger name="com.vivance.auth" level="info" additivity="false">
+                <AppenderRef ref="Console"/>
                 <AppenderRef ref="AppLog"/>
             </Logger>
             <Root level="warn">
+                <AppenderRef ref="Console"/>
                 <AppenderRef ref="AppLog"/>
             </Root>
         </SpringProfile>

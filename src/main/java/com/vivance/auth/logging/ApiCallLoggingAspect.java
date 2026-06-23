@@ -24,21 +24,23 @@ import java.util.*;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class AppAuthLoggingAspect {
+public class ApiCallLoggingAspect {
 
-    private static final String SERVICE_CHANNEL = "AUTH-APP";
     private static final Set<String> MASKED_HEADERS = Set.of("authorization", "cookie", "x-api-key");
-    private static final Set<String> MASKED_BODY_FIELDS = Set.of("password", "domainPassword");
-    private static final String TRACE_ID_ATTR = "APP_AUTH_TRACE_ID";
+    private static final Set<String> MASKED_BODY_FIELDS = Set.of(
+            "password", "domainPassword", "refreshToken", "idToken", "identityToken");
+    private static final String TRACE_ID_ATTR = "API_CALL_TRACE_ID";
     private static final String TRACE_ID_HEADER = "X-Request-Id";
 
     private final ApiEventLogService apiEventLogService;
     private final ObjectMapper objectMapper;
 
-    @Around("execution(* com.vivance.auth.controller.AppAuthController.*(..))")
-    public Object logAppAuth(ProceedingJoinPoint pjp) throws Throwable {
+    @Around("execution(* com.vivance.auth.controller..*(..))")
+    public Object logApiCall(ProceedingJoinPoint pjp) throws Throwable {
         HttpServletRequest request = resolveRequest();
         String eventName = request != null ? request.getRequestURI() : pjp.getSignature().getName();
+        String serviceChannel = resolveServiceChannel(eventName);
+        String logLabel = resolveLogLabel(eventName);
         Long accessLogId = resolveAccessLogId(request);
         String traceId = resolveOrCreateTraceId(request);
 
@@ -46,7 +48,8 @@ public class AppAuthLoggingAspect {
         String reqParams = serializeParams(request);
         String reqBody = serializeRequestBody(pjp.getArgs());
 
-        log.info("APP_AUTH_CALL REQUEST traceId={} accessLogId={} method={} uri={} headers={} params={} body={}",
+        log.info("{} REQUEST traceId={} accessLogId={} method={} uri={} headers={} params={} body={}",
+                logLabel,
                 traceId,
                 accessLogId,
                 request != null ? request.getMethod() : null,
@@ -55,15 +58,15 @@ public class AppAuthLoggingAspect {
                 reqParams,
                 reqBody);
 
-        if (isAppLogin(request)) {
-            System.out.println("[APP_AUTH_LOGIN] REQUEST traceId=" + traceId + " accessLogId=" + accessLogId
+        if (isAppAuthPath(request)) {
+            System.out.println("[APP_AUTH_CALL] REQUEST traceId=" + traceId + " accessLogId=" + accessLogId
                     + " method=" + (request != null ? request.getMethod() : null) + " uri=" + eventName
                     + " headers=" + reqHeaders + " params=" + reqParams + " body=" + reqBody);
         }
 
         apiEventLogService.save(ApiCallEventLog.builder()
                 .apiAccessLogId(accessLogId)
-                .serviceChannel(SERVICE_CHANNEL)
+                .serviceChannel(serviceChannel)
                 .eventName(eventName)
                 .eventType("REQUEST")
                 .headers(reqHeaders)
@@ -75,19 +78,20 @@ public class AppAuthLoggingAspect {
         try {
             result = pjp.proceed();
         } catch (Throwable ex) {
-            log.info("APP_AUTH_CALL ERROR traceId={} accessLogId={} method={} uri={} error={}",
+            log.info("{} ERROR traceId={} accessLogId={} method={} uri={} error={}",
+                    logLabel,
                     traceId,
                     accessLogId,
                     request != null ? request.getMethod() : null,
                     eventName,
                     ex.getMessage());
-            if (isAppLogin(request)) {
-                System.out.println("[APP_AUTH_LOGIN] ERROR traceId=" + traceId + " accessLogId=" + accessLogId
+            if (isAppAuthPath(request)) {
+                System.out.println("[APP_AUTH_CALL] ERROR traceId=" + traceId + " accessLogId=" + accessLogId
                         + " uri=" + eventName + " body=" + reqBody + " error=" + ex.getMessage());
             }
             apiEventLogService.save(ApiCallEventLog.builder()
                     .apiAccessLogId(accessLogId)
-                    .serviceChannel(SERVICE_CHANNEL)
+                    .serviceChannel(serviceChannel)
                     .eventName(eventName)
                     .eventType("ERROR")
                     .parameters(ex.getMessage())
@@ -98,7 +102,8 @@ public class AppAuthLoggingAspect {
 
         String respBody = serializeResponseBody(result);
         Integer status = resolveStatus(result);
-        log.info("APP_AUTH_CALL RESPONSE traceId={} accessLogId={} method={} uri={} status={} body={}",
+        log.info("{} RESPONSE traceId={} accessLogId={} method={} uri={} status={} body={}",
+                logLabel,
                 traceId,
                 accessLogId,
                 request != null ? request.getMethod() : null,
@@ -106,14 +111,14 @@ public class AppAuthLoggingAspect {
                 status,
                 respBody);
 
-        if (isAppLogin(request)) {
-            System.out.println("[APP_AUTH_LOGIN] RESPONSE traceId=" + traceId + " accessLogId=" + accessLogId
+        if (isAppAuthPath(request)) {
+            System.out.println("[APP_AUTH_CALL] RESPONSE traceId=" + traceId + " accessLogId=" + accessLogId
                     + " status=" + status + " body=" + respBody);
         }
 
         apiEventLogService.save(ApiCallEventLog.builder()
                 .apiAccessLogId(accessLogId)
-                .serviceChannel(SERVICE_CHANNEL)
+                .serviceChannel(serviceChannel)
                 .eventName(eventName)
                 .eventType("RESPONSE")
                 .content(respBody)
@@ -122,13 +127,37 @@ public class AppAuthLoggingAspect {
         return result;
     }
 
-    /** Stdout troubleshooting lines for POST /app/auth/login only (password masked in body). */
-    private static boolean isAppLogin(HttpServletRequest request) {
+    static String resolveServiceChannel(String uri) {
+        if (uri == null) {
+            return "AUTH";
+        }
+        if (uri.contains("/user/auth/")) {
+            return "AUTH-USER";
+        }
+        if (uri.contains("/app/auth/")) {
+            return "AUTH-APP";
+        }
+        return "AUTH";
+    }
+
+    /** Application log prefix — grep-friendly labels per API group. */
+    static String resolveLogLabel(String uri) {
+        if (uri != null && uri.contains("/app/auth/")) {
+            return "APP_AUTH_CALL";
+        }
+        if (uri != null && uri.contains("/user/auth/")) {
+            return "USER_AUTH_CALL";
+        }
+        return "AUTH_CALL";
+    }
+
+    /** Console troubleshooting for all /app/auth/* endpoints. */
+    private static boolean isAppAuthPath(HttpServletRequest request) {
         if (request == null) {
             return false;
         }
         String uri = request.getRequestURI();
-        return uri != null && uri.contains("/app/auth/login");
+        return uri != null && uri.contains("/app/auth/");
     }
 
     private HttpServletRequest resolveRequest() {
@@ -170,12 +199,10 @@ public class AppAuthLoggingAspect {
         try {
             Map<String, Object> params = new LinkedHashMap<>();
 
-            // Caller identity
             params.put("ip", resolveClientIp(request));
             params.put("method", request.getMethod());
             params.put("userAgent", request.getHeader("user-agent"));
 
-            // Query parameters (masked)
             request.getParameterMap().forEach((k, v) -> {
                 if (!k.equalsIgnoreCase("password")) {
                     params.put(k, v.length > 0 ? v[0] : "");
@@ -189,7 +216,6 @@ public class AppAuthLoggingAspect {
     }
 
     private String resolveClientIp(HttpServletRequest request) {
-        // Respect reverse-proxy forwarding headers before falling back to socket address
         String forwarded = request.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {
             return forwarded.split(",")[0].trim();

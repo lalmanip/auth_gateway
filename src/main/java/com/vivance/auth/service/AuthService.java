@@ -47,18 +47,26 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail()))
+        String email = request.getEmail().trim();
+
+        if (userRepository.existsByEmail(email)) {
             throw AuthException.conflict("Email is already registered");
+        }
+        if (userRepository.existsByUserName(email)) {
+            throw AuthException.conflict("Username is already registered");
+        }
 
         User user = new User();
-        user.setEmail(request.getEmail());
+        user.setEmail(email);
+        user.setUserName(email);
+        user.setUserType(User.DEFAULT_USER_TYPE);
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setCountryCode(request.getCountryCode());
         userRepository.save(user);
 
-        log.info("New user registered: {}", user.getUserId());
+        log.info("New user registered: uuid={}, userType={}", user.getUserId(), user.getUserType());
         return buildTokenResponse(user.getUserId(), true);
     }
 
@@ -113,6 +121,8 @@ public class AuthService {
             if (user == null) {
                 user = new User();
                 user.setEmail(info.email());
+                user.setUserName(info.email());
+                user.setUserType(User.DEFAULT_USER_TYPE);
                 userRepository.save(user);
                 isNew = true;
             }

@@ -25,10 +25,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     "/user/auth/**",
-                    "/app/auth/register",
-                    "/app/auth/login",
-                    "/app/auth/refresh",
-                    "/app/auth/token-info",
+                    "/app/auth/**",
                     "/api-docs/**",
                     "/swagger-ui/**",
                     "/swagger-ui.html"
