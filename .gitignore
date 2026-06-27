@@ -1,11 +1,16 @@
-# Maven build output (classes, jars, copied *.properties, etc.)
+# Maven build output
 target/
 
-# Compiled bytecode (anywhere outside target/)
+# Compiled bytecode
 *.class
 
-# Copied / generated properties under build output only
-target/**/*.properties
+# Config & deployment (keep local / on server only — not in git)
+*.properties
+*.yaml
+*.yml
+
+# Backup files
+*.bak
 
 # IDE
 .idea/
