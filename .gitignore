@@ -4,10 +4,10 @@ target/
 # Compiled bytecode
 *.class
 
-# Config & deployment (keep local / on server only — not in git)
-*.properties
-*.yaml
-*.yml
+# App & cluster config (keep on server / locally — not in git)
+k8s/
+src/main/resources/application.properties
+src/main/resources/application-*.properties
 
 # Backup files
 *.bak
