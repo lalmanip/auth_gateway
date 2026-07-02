@@ -39,8 +39,11 @@ public class AesEncryptionService {
     }
 
     public String decrypt(String cipherText) {
-        if (cipherText == null) {
-            return null;
+        if (cipherText == null || cipherText.isBlank()) {
+            return cipherText;
+        }
+        if (!looksEncrypted(cipherText)) {
+            return cipherText;
         }
         try {
             SecretKeySpec secretKey = new SecretKeySpec(deriveKey(aesPassword), "AES");
@@ -50,7 +53,20 @@ public class AesEncryptionService {
             byte[] decrypted = cipher.doFinal(decoded);
             return new String(decrypted, StandardCharsets.UTF_8);
         } catch (Exception e) {
-            throw new IllegalStateException("Error decrypting value", e);
+            // Legacy rows may still store plaintext email / username.
+            return cipherText;
+        }
+    }
+
+    private static boolean looksEncrypted(String value) {
+        if (value.contains("@")) {
+            return false;
+        }
+        try {
+            byte[] decoded = Base64.getDecoder().decode(value);
+            return decoded.length >= 16 && decoded.length % 16 == 0;
+        } catch (IllegalArgumentException ex) {
+            return false;
         }
     }
 
