@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final UserLookupService userLookupService;
     private final UserAuthProviderRepository providerRepository;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
@@ -31,8 +32,7 @@ public class AuthService {
     @Transactional
     public AuthResponse login(LoginRequest request) {
         String loginId = request.getUserName().trim();
-        User user = userRepository.findByEmail(loginId)
-                .or(() -> userRepository.findByUserName(loginId))
+        User user = userLookupService.findByLoginId(loginId)
                 .orElseThrow(() -> AuthException.unauthorized("Invalid credentials"));
 
         if (user.getPasswordHash() == null)
@@ -51,11 +51,8 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
         String loginId = resolveLoginId(request);
 
-        if (userRepository.existsByEmail(loginId)) {
+        if (userLookupService.loginIdExists(loginId)) {
             throw AuthException.conflict("Email is already registered");
-        }
-        if (userRepository.existsByUserName(loginId)) {
-            throw AuthException.conflict("Username is already registered");
         }
 
         int userType = request.getUserType() != null
@@ -138,7 +135,7 @@ public class AuthService {
                     .orElseThrow(() -> new IllegalStateException("Orphaned provider link"));
         } else {
             // Link to existing email account if one exists, else create new user
-            user = userRepository.findByEmail(info.email()).orElse(null);
+            user = userLookupService.findByLoginId(info.email()).orElse(null);
             if (user == null) {
                 user = new User();
                 user.setEmail(info.email());

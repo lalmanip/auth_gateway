@@ -5,7 +5,7 @@ import jakarta.persistence.Converter;
 import org.springframework.stereotype.Component;
 
 @Component
-@Converter
+@Converter(autoApply = false)
 public class AesAttributeConverter implements AttributeConverter<String, String> {
 
     private final AesEncryptionService encryptionService;
