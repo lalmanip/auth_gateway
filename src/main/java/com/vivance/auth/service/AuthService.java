@@ -30,7 +30,9 @@ public class AuthService {
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getUserName())
+        String loginId = request.getUserName().trim();
+        User user = userRepository.findByEmail(loginId)
+                .or(() -> userRepository.findByUserName(loginId))
                 .orElseThrow(() -> AuthException.unauthorized("Invalid credentials"));
 
         if (user.getPasswordHash() == null)
@@ -47,19 +49,46 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail()))
+        String loginId = resolveLoginId(request);
+
+        if (userRepository.existsByEmail(loginId)) {
             throw AuthException.conflict("Email is already registered");
+        }
+        if (userRepository.existsByUserName(loginId)) {
+            throw AuthException.conflict("Username is already registered");
+        }
+
+        int userType = request.getUserType() != null
+                ? request.getUserType()
+                : User.DEFAULT_USER_TYPE;
+        User.Status status = request.getStatus() != null && request.getStatus() == 0
+                ? User.Status.INACTIVE
+                : User.Status.ACTIVE;
 
         User user = new User();
-        user.setEmail(request.getEmail());
+        user.setEmail(loginId);
+        user.setUserName(loginId);
+        user.setUserType(userType);
+        user.setStatus(status);
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setCountryCode(request.getCountryCode());
         userRepository.save(user);
 
-        log.info("New user registered: {}", user.getUserId());
+        log.info("New user registered: uuid={}, userType={}, status={}",
+                user.getUserId(), user.getUserType(), user.getStatus());
         return buildTokenResponse(user.getUserId(), true);
+    }
+
+    private static String resolveLoginId(RegisterRequest request) {
+        if (request.getUserName() != null && !request.getUserName().isBlank()) {
+            return request.getUserName().trim();
+        }
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            return request.getEmail().trim();
+        }
+        throw AuthException.badRequest("email or userName is required");
     }
 
     @Transactional
@@ -113,6 +142,8 @@ public class AuthService {
             if (user == null) {
                 user = new User();
                 user.setEmail(info.email());
+                user.setUserName(info.email());
+                user.setUserType(User.DEFAULT_USER_TYPE);
                 userRepository.save(user);
                 isNew = true;
             }

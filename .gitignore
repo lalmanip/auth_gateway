@@ -1,21 +1,26 @@
-# Compiled class files
-*.class
-
 # Maven build output
 target/
 
-# IDE files
+# Compiled bytecode
+*.class
+
+# Config & deployment (keep local / on server only — not in git)
+*.properties
+*.yaml
+*.yml
+
+# Backup files
+*.bak
+
+# IDE
 .idea/
 *.iml
 .vscode/
 
 # Logs
 *.log
+*.log.gz
 
 # OS
 .DS_Store
 Thumbs.db
-target/classes/com/vivance/auth/VivanceAuthApplication.class
-target/classes/com/vivance/auth/VivanceAuthApplication.class
-/target/classes
-src/main/resources/application.properties

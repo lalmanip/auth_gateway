@@ -44,12 +44,18 @@ public class ApiAccessLogFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getRequestURI().contains("/app/auth/");
+        String uri = request.getRequestURI();
+        return uri.contains("/swagger-ui")
+                || uri.contains("/api-docs")
+                || uri.endsWith("/favicon.ico");
     }
 
     // URI example: /vivapi-auth/app/auth/login → split[2] = "app"
     private String extractModule(String uri) {
         String[] parts = uri.split("/");
+        if (parts.length > 3 && "auth".equals(parts[3])) {
+            return parts[2];
+        }
         return parts.length > 2 ? parts[2] : "auth";
     }
 }
