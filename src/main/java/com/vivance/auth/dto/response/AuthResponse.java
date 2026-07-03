@@ -15,5 +15,4 @@ public class AuthResponse {
     private long expiresIn;
     private String userId;
     private Boolean isNewUser;
-    private String sessionToken;
 }
