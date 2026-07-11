@@ -14,6 +14,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -115,6 +117,55 @@ public class AuthService {
     public void logout(String userId) {
         refreshTokenService.revokeAll(userId);
         log.info("User logged out, all tokens revoked: {}", userId);
+    }
+
+    /**
+     * Authenticated password change — stores BCrypt hash (same as register/login).
+     * Revokes all refresh tokens so existing sessions must re-login.
+     */
+    @Transactional
+    public void changePassword(String userId, ChangePasswordRequest request) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> AuthException.unauthorized("Invalid token"));
+
+        if (user.getPasswordHash() == null) {
+            throw AuthException.badRequest("This account uses social login and has no password");
+        }
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw AuthException.unauthorized("Current password is incorrect");
+        }
+        if (request.getCurrentPassword().equals(request.getNewPassword())) {
+            throw AuthException.badRequest("New password must be different from current password");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        user.setPwdToken(null);
+        user.setPwdTokenExpiry(null);
+        userRepository.save(user);
+        refreshTokenService.revokeAll(userId);
+        log.info("Password changed for user uuid={}", userId);
+    }
+
+    /**
+     * Forgot-password completion — token from {@code /vivapi-user/user/forgotpasswd} email.
+     * Stores BCrypt hash (same as register/login).
+     */
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        User user = userRepository.findByPwdToken(request.getToken())
+                .orElseThrow(() -> AuthException.badRequest("Invalid or expired token"));
+
+        if (user.getPwdTokenExpiry() == null
+                || user.getPwdTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw AuthException.badRequest("Invalid or expired token");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        user.setPwdToken(null);
+        user.setPwdTokenExpiry(null);
+        userRepository.save(user);
+        refreshTokenService.revokeAll(user.getUserId());
+        log.info("Password reset via token for user uuid={}", user.getUserId());
     }
 
     // --- helpers ---

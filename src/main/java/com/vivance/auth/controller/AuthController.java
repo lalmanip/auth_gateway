@@ -65,6 +65,32 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
 
+    @PostMapping("/change-password")
+    @Operation(
+            summary = "Change password (authenticated)",
+            description = "Requires Bearer access token. Stores BCrypt hash compatible with /login.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<Map<String, String>> changePassword(
+            @RequestHeader("Authorization") String authHeader,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        String token = extractBearerToken(authHeader);
+        if (!jwtService.isValid(token)) throw AuthException.unauthorized("Invalid token");
+        String userId = jwtService.extractUserId(token);
+        authService.changePassword(userId, request);
+        return ResponseEntity.ok(Map.of(
+                "message", "Password changed successfully. Please sign in again."));
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(
+            summary = "Reset password with forgot-password token",
+            description = "Use token from forgot-password email. Stores BCrypt hash compatible with /login.")
+    public ResponseEntity<Map<String, String>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(Map.of("message", "Password reset successfully. Please sign in."));
+    }
+
     private String extractBearerToken(String header) {
         if (header == null || !header.startsWith("Bearer "))
             throw AuthException.unauthorized("Missing or malformed Authorization header");

@@ -59,6 +59,12 @@ public class User {
     @Column(name = "modified_on")
     private LocalDateTime updatedAt;
 
+    @Column(name = "pwd_token")
+    private String pwdToken;
+
+    @Column(name = "pwd_token_expiry")
+    private LocalDateTime pwdTokenExpiry;
+
     @PrePersist
     void onCreate() {
         if (userId == null) userId = UUID.randomUUID().toString();

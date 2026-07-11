@@ -11,6 +11,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByUserId(String userId);
 
+    Optional<User> findByPwdToken(String pwdToken);
+
     /** Native count — avoids hydrating entities and running attribute converters. */
     @Query(value = """
             SELECT COUNT(*) FROM user
