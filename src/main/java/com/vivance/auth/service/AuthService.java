@@ -52,7 +52,8 @@ public class AuthService {
         String loginId = resolveLoginId(request);
 
         if (userLookupService.loginIdExists(loginId)) {
-            throw AuthException.conflict("Email is already registered");
+            throw AuthException.conflict(
+                    "An account with this email already exists. Try Sign In or use Forgot Password.");
         }
 
         int userType = request.getUserType() != null

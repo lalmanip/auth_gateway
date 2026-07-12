@@ -17,8 +17,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AuthException.class)
     public ResponseEntity<Map<String, String>> handleAuthException(AuthException ex) {
+        // Include both message and error so UI clients can read either field.
         return ResponseEntity.status(ex.getStatus())
-                .body(Map.of("error", ex.getMessage()));
+                .body(Map.of(
+                        "status", "failed",
+                        "message", ex.getMessage(),
+                        "error", ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
