@@ -3,6 +3,7 @@ package com.vivance.auth.logging;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vivance.auth.entity.ApiAccessLog;
 import com.vivance.auth.entity.ApiCallEventLog;
+import com.vivance.auth.exception.AuthException;
 import com.vivance.auth.filter.ApiAccessLogFilter;
 import com.vivance.auth.service.ApiEventLogService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -77,6 +78,34 @@ public class ApiCallLoggingAspect {
         Object result;
         try {
             result = pjp.proceed();
+        } catch (AuthException ex) {
+            // Expected business outcomes (e.g. email already registered → 409) — not system errors.
+            String respBody = serializeResponseBody(Map.of(
+                    "status", "failed",
+                    "message", ex.getMessage(),
+                    "error", ex.getMessage()));
+            int status = ex.getStatus().value();
+            log.info("{} RESPONSE traceId={} accessLogId={} method={} uri={} status={} body={}",
+                    logLabel,
+                    traceId,
+                    accessLogId,
+                    request != null ? request.getMethod() : null,
+                    eventName,
+                    status,
+                    respBody);
+            if (isAppAuthPath(request)) {
+                System.out.println("[APP_AUTH_CALL] RESPONSE traceId=" + traceId + " accessLogId=" + accessLogId
+                        + " status=" + status + " body=" + respBody);
+            }
+            apiEventLogService.save(ApiCallEventLog.builder()
+                    .apiAccessLogId(accessLogId)
+                    .serviceChannel(serviceChannel)
+                    .eventName(eventName)
+                    .eventType("RESPONSE")
+                    .parameters("status=" + status)
+                    .content(respBody)
+                    .build());
+            throw ex;
         } catch (Throwable ex) {
             log.info("{} ERROR traceId={} accessLogId={} method={} uri={} error={}",
                     logLabel,
